@@ -1,6 +1,6 @@
 policy "ec2-network-acl" {
   source = "https://registry.terraform.io/v2/policies/hashicorp/FSBP-Policy-Set-for-AWS-Terraform/1.1.2/policy/ec2-network-acl.sentinel?checksum=sha256:4955bfdb061e64552c7aa69e1e71f8c915fd333692e16981e894d834e8eb69f1"
-  enforcement_level = "advisory"
+  enforcement_level = "soft-mandatory"
 }
 
 module "tfplan-functions" {
