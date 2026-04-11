@@ -1,0 +1,53 @@
+# restrict-instance-types.sentinel
+#
+# Policy: EC2 instances must use an approved instance type.
+# Enforcement level: hard-mandatory
+#   - Cannot be overridden. Full stop.
+#
+# Demo talking point: This is how you prevent someone from accidentally
+# spinning up a c5.18xlarge in dev and running up a surprise bill.
+
+import "tfplan/v2" as tfplan
+
+# -------------------------------------------------
+# Approved instance types for this environment
+# -------------------------------------------------
+approved_instance_types = [
+  "t3.micro",
+  "t3.small",
+  "t3.medium",
+]
+
+# -------------------------------------------------
+# Get all EC2 instance resources being created or updated
+# -------------------------------------------------
+ec2_instances = filter tfplan.resource_changes as _, resource_change {
+  resource_change.type is "aws_instance" and
+  (resource_change.change.actions contains "create" or
+   resource_change.change.actions contains "update")
+}
+
+# -------------------------------------------------
+# Flag any instance using a non-approved type
+# -------------------------------------------------
+violations = filter ec2_instances as _, instance {
+  not (instance.change.after.instance_type in approved_instance_types)
+}
+
+# -------------------------------------------------
+# Print helpful message listing the violation
+# -------------------------------------------------
+violation_messages = map violations as _, instance {
+  instance.address + " uses instance type: " + instance.change.after.instance_type
+}
+
+# -------------------------------------------------
+# Main rule
+# -------------------------------------------------
+main = rule {
+  length(violations) is 0
+} else {
+  print("The following EC2 instances use non-approved instance types:")
+  print(violation_messages)
+  false
+}
